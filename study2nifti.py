@@ -31,8 +31,8 @@ class studyreport():
 
     get sublist:
     """
-    def __init__(studydir, outdir, nthreads=-1):
-        self.flist = np.array(glob.glob(op.join(args.studydir, '**/*.dcm'),
+    def __init__(self, studydir, outdir=None, nthreads=-1):
+        self.flist = np.array(glob.glob(op.join(studydir, '**/*.dcm'),
                            recursive=True))
         if not isinstance(nthreads, int):
             raise Exception('Variable nthreads need to be an integer')
@@ -51,15 +51,16 @@ class studyreport():
             tqdm.write('Processing with ' +
                        np.str(self.workers) +
                        ' workers...')
+        if outdir is None:
+            outdir = studydir
 
-    @property
     def getstudyinfo(self):
         inputs = trange(len(self.flist),
                         desc='Analyzing Files',
                         unit='files')
-        self.dicoprops = Parallel(n_jobs=8, prefer='processes') \
-            (delayed(getsubfield)(self.flist[i]) for i in inputs)
-        self.dicoprops = pd.DataFrame(self.dicoprops,
+        infoarray = Parallel(n_jobs=8, prefer='processes') \
+            (delayed(self.getsubfield)(self.flist[i]) for i in inputs)
+        self.dicomprops = pd.DataFrame(infoarray,
                                       columns=['PatientID',
                                                'AcquisitionDate',
                                                'PatientSex',
@@ -68,37 +69,40 @@ class studyreport():
                                                'ProtocolName',
                                                'SequenceName'])
 
-    @function
     def getsublist(self):
         sublist = pd.unique(self.dicomprops.loc[:, 'PatientID'])
         tqdm.write('Discovered '+ str(len(sublist)) + ' subjects')
         return sublist
 
-
-
-    @function
-    def makeunique(self, inlist, colidx=0):
+    def makeunique(self, colidx=0):
         """
         Makes a numpy array unique based on an input column index
 
         Parameters
         ----------
-        inlist: input numpy array
-        colidx: column index according which to make unique
+        colidx: column index according which to make unique. This is a
+        Pandas column index, so use either an integer or string
 
         Returns
         -------
         Numpy array containing unique list
         """
-        if inlist=None:
-            raise Exception('Input list or numpy array cannot be '
-                            'Nonetype. Please enter a valid list or array')
-        inlist = np.array(inlist)
-        master = inlist[:, colidx]
-        umaster, idx = np.unique(master, return_index=True)
+        if not (isinstance(colidx, int) or  isinstance(colidx, str)):
+            raise Exception('Column index is not a supported variable '
+                            'type. Please use either an integer or '
+                            'string and ensure it is a valid Pandas '
+                            'dataframe index')
 
+        if isinstance(colidx, int):
+            if colidx < 0:
+                raise Exception(
+                    'Column index needs to be a positive integer')
+            else:
+                uniquevec = pd.unique(self.dicomprops.iloc[:, colidx])
+        elif isinstance(colidx, str):
+            uniquevec = pd.unique(self.dicomprops.loc[:, colidx])
+        return uniquevec
 
-    @function
     def getsubfield(self, dcmpath):
         """
         Returns a numpy array containing essential information for an
@@ -130,7 +134,6 @@ class studyreport():
             subinfo.append('N/A')
         return subinfo
 
-    @function
     def getsubid(self, dcmpath):
         """
         Returns patient ID from the 'PatientID' field of a DICOM header
@@ -146,5 +149,3 @@ class studyreport():
         """
         dcmfile = pyd.dcmread(dcmpath)
         return dcmfile.PatientID
-
-
