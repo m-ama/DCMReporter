@@ -1,13 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import os
 from os import path as op
 import pandas as pd
 import numpy as np
 import pydicom as pyd
-import shutil
-import argparse
 import glob
 from tqdm import tqdm, trange
 import multiprocessing
@@ -58,7 +55,7 @@ class studyreport():
         inputs = trange(len(self.flist),
                         desc='Analyzing Files',
                         unit='files')
-        infoarray = Parallel(n_jobs=8, prefer='processes') \
+        infoarray = Parallel(self.workers, prefer='processes') \
             (delayed(self.getsubfield)(self.flist[i]) for i in inputs)
         self.dicomprops = pd.DataFrame(infoarray,
                                       columns=['PatientID',
@@ -68,6 +65,40 @@ class studyreport():
                                                'SoftwareVersion',
                                                'ProtocolName',
                                                'SequenceName'])
+
+    def subtablehelper(self, subject, protolist):
+        subchunk = self.dicomprops.loc[self.dicomprops.loc[:,
+                                       'PatientID'] == subject, :]
+        protosum = []
+        protosum.append(subchunk.loc[:, 'AcquisitionDate'].iloc[0])
+        protosum.append(subchunk.loc[:, 'PatientSex'].iloc[0])
+        protosum.append(subchunk.loc[:, 'PatientAge'].iloc[0])
+        protosum.append(subchunk.loc[:, 'SoftwareVersion'].iloc[0])
+        for i, proto in enumerate(protolist):
+            protosum.append(np.sum(
+                subchunk.loc[:, 'ProtocolName'] == proto))
+        return protosum
+
+    def createstudytable(self):
+        sublist = np.sort(self.makeunique('PatientID'))
+        protolist = np.sort(self.makeunique('ProtocolName'))[::-1]
+        protolist = list(filter(None, protolist))
+        inputs = trange(len(sublist),
+                        desc='Creating Dataframe',
+                        unit='sub')
+        studytable = Parallel(n_jobs=self.workers, prefer='processes') \
+            (delayed(self.subtablehelper)(sublist[i], protolist) for i in
+             inputs)
+        newcols = ['AcquisitionDate', 'PatientSex', 'PatientAge',
+                   'SoftwareVersion']
+        newcols.extend(protolist)
+        studytable = pd.DataFrame(studytable,
+                                  index=sublist,
+                                  columns=newcols)
+        return studytable
+
+    def writepdtable(self, pdtable, outdir):
+        pdtable.to_csv(outdir)
 
     def getsublist(self):
         sublist = pd.unique(self.dicomprops.loc[:, 'PatientID'])
