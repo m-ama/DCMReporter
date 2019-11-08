@@ -52,6 +52,20 @@ class studyreport():
             outdir = studydir
 
     def getstudyinfo(self):
+        """
+        Reads off varios DICOM header fields and returns a Pandas
+        Dataframe on information discovered in a the class object
+        self.dicomprops
+
+        Parameters
+        ----------
+        (none)
+
+        Returns
+        -------
+        self.dicomprops:    Pandas Dataframe
+                            Contaions DICOM information per subject
+        """
         inputs = trange(len(self.flist),
                         desc='Analyzing Files',
                         unit='files')
@@ -67,6 +81,24 @@ class studyreport():
                                                'SequenceName'])
 
     def subtablehelper(self, subject, protolist):
+        """
+        This is a helper function to make class method createstudytable()
+        compatible with joblib parallel processing. This function outputs
+        a list containins sums of dicom files per protocol for a given
+        subject.
+
+        Parameters
+        ----------
+        subject:    string
+                    SubjectID of subject to compute sums of
+        protolist:  string list
+                    list of protocols to query for sum
+
+        Returns
+        -------
+        protosum:   int list
+                    list containing sum of files in queried protocols
+        """
         subchunk = self.dicomprops.loc[self.dicomprops.loc[:,
                                        'PatientID'] == subject, :]
         protosum = []
@@ -80,6 +112,19 @@ class studyreport():
         return protosum
 
     def createstudytable(self):
+        """
+        Returns a condensed Pandas Dataframe from the master dataframe
+        returned by class method getstudyinfo(). The condensed dataframe
+        returned here containins sum of all files per protocol per subject
+
+        Parameters
+        ----------
+
+        Returns
+        -------
+        studytable: Pandas Dataframe
+                    Contains sum of all files in a protocol, per subject
+        """
         sublist = np.sort(self.makeunique('PatientID'))
         protolist = np.sort(self.makeunique('ProtocolName'))[::-1]
         protolist = list(filter(None, protolist))
@@ -98,9 +143,30 @@ class studyreport():
         return studytable
 
     def writepdtable(self, pdtable, outdir):
+        '''
+        Writes a Pandas Dataframe onto disk as a CSV file
+
+        Parameters
+        ----------
+        pdtable:    Pandas Dataframe
+                    Table to write
+        outdir:     Path to write to
+        '''
         pdtable.to_csv(outdir)
 
     def getsublist(self):
+        '''
+        Returns a list of all subjects discovered in a study
+
+        Parameters
+        ----------
+        (none)
+
+        Returns
+        -------
+        sublist:    list of strings
+                    contains all subjects discovered
+        '''
         sublist = pd.unique(self.dicomprops.loc[:, 'PatientID'])
         tqdm.write('Discovered '+ str(len(sublist)) + ' subjects')
         return sublist
@@ -111,12 +177,14 @@ class studyreport():
 
         Parameters
         ----------
-        colidx: column index according which to make unique. This is a
-        Pandas column index, so use either an integer or string
+        colidx: int or str
+                column index according which to make unique. This is a
+                Pandas column index, so use either an integer or string
 
         Returns
         -------
-        Numpy array containing unique list
+        uniquevec:  Numpy array of strings
+                    Numpy array containing unique list
         """
         if not (isinstance(colidx, int) or  isinstance(colidx, str)):
             raise Exception('Column index is not a supported variable '
@@ -146,7 +214,8 @@ class studyreport():
 
         Returns
         -------
-        List containing subject information
+        subinfo:    list of strings
+                    List containing subject information
         """
         subinfo = []
         dcmfile = pyd.dcmread(dcmpath)
