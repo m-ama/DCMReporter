@@ -28,7 +28,7 @@ class studyreport():
 
     get sublist:
     """
-    def __init__(self, studydir, outdir=None, nthreads=-1):
+    def __init__(self, studydir, nthreads=1):
         self.flist = np.array(glob.glob(op.join(studydir, '**/*.dcm'),
                            recursive=True))
         if not isinstance(nthreads, int):
