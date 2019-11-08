@@ -10,6 +10,8 @@ from tqdm import tqdm, trange
 import multiprocessing
 from joblib import Parallel, delayed
 
+tqdmwidth = 70
+
 class studyreport():
     """
     The study report class object computes and holds important study
@@ -66,7 +68,8 @@ class studyreport():
         """
         inputs = trange(len(self.flist),
                         desc='Analyzing Files',
-                        unit='files')
+                        unit='files',
+                        ncols=tqdmwidth)
         infoarray = Parallel(self.workers, prefer='processes') \
             (delayed(self.getsubfield)(self.flist[i]) for i in inputs)
         self.dicomprops = pd.DataFrame(infoarray,
@@ -128,7 +131,8 @@ class studyreport():
         protolist = list(filter(None, protolist))
         inputs = trange(len(sublist),
                         desc='Creating Dataframe',
-                        unit='sub')
+                        unit='sub',
+                        ncols=tqdmwidth)
         studytable = Parallel(n_jobs=self.workers, prefer='processes') \
             (delayed(self.subtablehelper)(sublist[i], protolist) for i in
              inputs)
