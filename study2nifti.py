@@ -144,7 +144,8 @@ class studyreport():
 
     def writepdtable(self, pdtable, outdir):
         '''
-        Writes a Pandas Dataframe onto disk as a CSV file
+        Writes a Pandas Dataframe onto disk as a CSV file. Include
+        filename with .csv extension here.
 
         Parameters
         ----------
@@ -152,7 +153,13 @@ class studyreport():
                     Table to write
         outdir:     Path to write to
         '''
+        if outdir is None:
+            raise Exception('Please specify and output directory')
+        ext = list(op.splitext(outdir))
+        ext[1] = '.csv'
+        outdir = ext[0] + ext[1]
         pdtable.to_csv(outdir)
+        print('File saved to ' + outdir)
 
     def getsublist(self):
         '''
