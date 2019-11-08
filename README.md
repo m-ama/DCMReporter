@@ -20,7 +20,7 @@ pip install numpy, pandas, joblib, multiprocess, tqdm, pydicom
 ## Usage
 DCMReporter is fairly easy to use, with the following run context
 ```
-python studyreport.py [options] input output
+python dcmreporter.py [options] input output
 ```
 
 In it's current form, only the `--nthreads` flag works.
