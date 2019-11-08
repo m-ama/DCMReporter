@@ -48,8 +48,6 @@ class studyreport():
             tqdm.write('Processing with ' +
                        np.str(self.workers) +
                        ' workers...')
-        if outdir is None:
-            outdir = studydir
 
     def getstudyinfo(self):
         """
