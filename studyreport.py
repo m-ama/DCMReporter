@@ -31,7 +31,7 @@ class studyreport():
     get sublist:
     """
     def __init__(self, studydir, nthreads=1):
-        self.flist = np.array(glob.glob(op.join(studydir, '**/*.dcm'),
+        self.flist = np.array(glob.glob(op.join(studydir, '**/*'),
                            recursive=True))
         if not isinstance(nthreads, int):
             raise Exception('Variable nthreads need to be an integer')
@@ -70,9 +70,13 @@ class studyreport():
                         desc='Analyzing Files',
                         unit='files',
                         ncols=tqdmwidth)
-        infoarray = Parallel(self.workers, prefer='processes') \
+        infolist = Parallel(self.workers, prefer='processes') \
             (delayed(self.getsubfield)(self.flist[i]) for i in inputs)
-        self.dicomprops = pd.DataFrame(infoarray,
+        # Nones appear in `infolist` where flist is not a DICOM file.
+        # The following line gets rid of these rows so remaining files
+        # are only dicoms
+        infolist = [x for x in infolist if x is not None]
+        self.dicomprops = pd.DataFrame(infolist,
                                       columns=['PatientID',
                                                'AcquisitionDate',
                                                'PatientSex',
@@ -136,7 +140,8 @@ class studyreport():
         studytable = Parallel(n_jobs=self.workers, prefer='processes') \
             (delayed(self.subtablehelper)(sublist[i], protolist) for i in
              inputs)
-        newcols = ['AcquisitionDate', 'PatientSex', 'PatientAge',
+        newcols = ['AcquisitionDate', 'PatientSex',
+                   'PatientAge',
                    'SoftwareVersion']
         newcols.extend(protolist)
         studytable = pd.DataFrame(studytable,
@@ -227,16 +232,34 @@ class studyreport():
                     List containing subject information
         """
         subinfo = []
-        dcmfile = pyd.dcmread(dcmpath)
-        subinfo.append(dcmfile.PatientID)
+        try:
+            dcmfile = pyd.dcmread(dcmpath)
+        except:
+            return
+        try:
+            subinfo.append(dcmfile.PatientID)
+        except:
+            subinfo.append('N/A')
         try:
             subinfo.append(dcmfile.AcquisitionDate)
         except:
             subinfo.append('N/A')
-        subinfo.append(dcmfile.PatientSex)
-        subinfo.append(dcmfile.PatientAge)
-        subinfo.append(dcmfile.SoftwareVersions)
-        subinfo.append(dcmfile.ProtocolName)
+        try:
+            subinfo.append(dcmfile.PatientSex)
+        except:
+            subinfo.append('N/A')
+        try:
+            subinfo.append(dcmfile.PatientAge)
+        except:
+            subinfo.append('N/A')
+        try:
+            subinfo.append(dcmfile.SoftwareVersions)
+        except:
+            subinfo.append('N/A')
+        try:
+            subinfo.append(dcmfile.ProtocolName)
+        except:
+            subinfo.append('N/A')
         try:
             subinfo.append(dcmfile.SequenceName)
         except:
