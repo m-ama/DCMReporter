@@ -4,8 +4,9 @@ consistency of the number of files per protocol, per subject, in an entire study
 
 _Disclaimer:_
 ```
-DCMReporter only works with DICOM files. This tool with ignore DICOM files compressed into another folder such as .zip,
-.gz or .tar. Please ensure that contents of your DICOM study are completely decompressed prior to running DCMReporter.
+DCMReporter only works with DICOM files. This tool with ignore DICOM files compressed into another
+folder such as .zip, .gz or .tar. Please ensure that contents of your DICOM study are completely 
+decompressed prior to running DCMReporter.
 ```
 
 ## Dependencies
