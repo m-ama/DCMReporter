@@ -82,6 +82,7 @@ class studyreport():
                                                'PatientSex',
                                                'PatientAge',
                                                'SoftwareVersion',
+                                               'StudyDescription',
                                                'ProtocolName',
                                                'SequenceName'])
 
@@ -111,6 +112,7 @@ class studyreport():
         protosum.append(subchunk.loc[:, 'PatientSex'].iloc[0])
         protosum.append(subchunk.loc[:, 'PatientAge'].iloc[0])
         protosum.append(subchunk.loc[:, 'SoftwareVersion'].iloc[0])
+        protosum.append(subchunk.loc[:, 'StudyDescription'].iloc[0])
         for i, proto in enumerate(protolist):
             protosum.append(np.sum(
                 subchunk.loc[:, 'ProtocolName'] == proto))
@@ -142,7 +144,8 @@ class studyreport():
              inputs)
         newcols = ['AcquisitionDate', 'PatientSex',
                    'PatientAge',
-                   'SoftwareVersion']
+                   'SoftwareVersion',
+                   'StudyDescription']
         newcols.extend(protolist)
         studytable = pd.DataFrame(studytable,
                                   index=sublist,
@@ -254,6 +257,10 @@ class studyreport():
             subinfo.append('N/A')
         try:
             subinfo.append(dcmfile.SoftwareVersions)
+        except:
+            subinfo.append('N/A')
+        try:
+            subinfo.append(dcmfile.StudyDescription)
         except:
             subinfo.append('N/A')
         try:
